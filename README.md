@@ -1,4 +1,4 @@
-# Hope PMS — Product Management System
+# MLR-AZ PMS — Product Management System
 
 A full-stack product management system for Hope, Inc., built with React 18 + Vite + Supabase.
 
