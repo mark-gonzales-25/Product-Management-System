@@ -7,9 +7,10 @@
 ## Entity-Relationship Diagram
 
 ```
-![erd of Profile tables](image.png)  
+<img width="802" height="712" alt="image" src="https://github.com/user-attachments/assets/caf27733-4587-4047-b67c-4ab5af9099af" />
 
-![unmerged product table](image-1.png)
+
+<img width="808" height="637" alt="image" src="https://github.com/user-attachments/assets/3ad0b198-be5e-4cbb-ac88-83ec3df6243b" />
 
 ---
 
