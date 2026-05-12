@@ -6,8 +6,13 @@ import DeletedPage from './DeletedPage'
 import ProductReportPage from './ProductReportPage'
 import TopSellingPage from './TopSellingPage'
 import AdminPage from './AdminPage'
+import { useAuth } from '../hooks/useAuth'
 
 export default function DashboardLayout() {
+  const { profile } = useAuth()
+  const role         = profile?.user_type ?? 'USER'
+  const isPrivileged = role === 'ADMIN' || role === 'SUPERADMIN'
+
   return (
     <div className="flex w-full min-h-screen">
       <Sidebar />
@@ -16,10 +21,10 @@ export default function DashboardLayout() {
         <main className="flex-1 p-6 px-7 bg-gray-50">
           <Routes>
             <Route path="products"            element={<ProductsPage />} />
-            <Route path="deleted"             element={<DeletedPage />} />
+            <Route path="deleted"             element={isPrivileged ? <DeletedPage />      : <Navigate to="products" replace />} />
             <Route path="reports/products"    element={<ProductReportPage />} />
-            <Route path="reports/top-selling" element={<TopSellingPage />} />
-            <Route path="admin"               element={<AdminPage />} />
+            <Route path="reports/top-selling" element={isPrivileged ? <TopSellingPage />   : <Navigate to="products" replace />} />
+            <Route path="admin"               element={isPrivileged ? <AdminPage />        : <Navigate to="products" replace />} />
             <Route path="*"                   element={<Navigate to="products" replace />} />
           </Routes>
         </main>
