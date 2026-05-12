@@ -1,10 +1,44 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './hooks/useAuth'
+import { isMisconfigured } from './lib/supabase'
+import LoginPage from './pages/LoginPage'
+import AuthCallbackPage from './pages/AuthCallbackPage'
+import DashboardLayout from './pages/DashboardLayout'
+import ProtectedRoute from './components/ProtectedRoute'
+import ConfigError from './components/ConfigError'
+
 export default function App() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-app-bg">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-navy">Hope PMS</h1>
-        <p className="text-gray-500 mt-2">Scaffold running — Vite + React 18 + Tailwind CSS ✓</p>
+  // Show config error immediately — no spinner, no blank screen
+  if (isMisconfigured) return <ConfigError />
+
+  return <AppRoutes />
+}
+
+function AppRoutes() {
+  const { loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+        <div className="spinner-lg" />
+        <p className="mt-4 text-gray-400 font-medium text-sm">Loading…</p>
       </div>
-    </div>
+    )
+  }
+
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route
+        path="/app/*"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/app/products" replace />} />
+    </Routes>
   )
 }
