@@ -1,10 +1,8 @@
-{
-  "compilerOptions": {
-    "composite": true,
-    "skipLibCheck": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true
-  },
-  "include": ["vite.config.ts"]
+// Placeholder — full implementation in Sprint 2/3
+export default function TopSellingPage() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <p className="text-gray-400 text-sm">TopSellingPage — coming soon</p>
+    </div>
+  )
 }
