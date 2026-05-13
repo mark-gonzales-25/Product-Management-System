@@ -1,8 +1,6 @@
 # Hope PMS — Production Deployment Guide
 
-## Sprint 3 – PR-02: chore/production-deploy
-
-This PR documents and configures the production deployment to Vercel/Netlify.
+A full-stack product management system for Hope, Inc., built with React 18 + Vite + Supabase.
 
 ---
 
@@ -60,14 +58,14 @@ Add `_redirects` file in `/public` for SPA routing:
 
 ## Post-Deploy Checklist
 
-- [ ] Live URL accessible
-- [ ] Login with email works
-- [ ] Login with Google OAuth works
-- [ ] All 3 user types can authenticate
-- [ ] VITE_ env vars set (not exposed in source)
-- [ ] Supabase redirect URLs updated for production domain
-- [ ] Stale GitHub branches deleted
-- [ ] Final release PR (dev → main) created and merged
+- [x] Live URL accessible
+- [x] Login with email works
+- [x] Login with Google OAuth works
+- [x] All 3 user types can authenticate
+- [x] VITE_ env vars set (not exposed in source)
+- [x] Supabase redirect URLs updated for production domain
+- [x] Stale GitHub branches deleted
+- [x] Final release PR (dev → main) created and merged
 
 ---
 
