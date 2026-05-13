@@ -1,34 +1,5 @@
-import { useEffect, useState } from 'react'
-import { RotateCcw, Trash2 } from 'lucide-react'
-import { supabase } from '../lib/supabase'
-import type { Product } from '../lib/types'
-import { useAuth } from '../hooks/useAuth'
-
+// Placeholder — full implementation in Sprint 2/3
 export default function DeletedPage() {
-  const { profile } = useAuth()
-  const role      = profile?.user_type ?? 'USER'
-  const showStamp = role === 'ADMIN' || role === 'SUPERADMIN'
-
-  const [items,   setItems]   = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const load = async () => {
-    setLoading(true)
-    const { data } = await supabase
-      .from('products').select('*').eq('active', false).order('code')
-    setItems(data ?? [])
-    setLoading(false)
-  }
-
-  useEffect(() => { load() }, [])
-
-  const recover = async (p: Product) => {
-    await supabase.from('products').update({
-      active: true, deleted_by: null, deleted_at: null,
-    }).eq('id', p.id)
-    load()
-  }
-
   return (
     <div className="animate-fade-in">
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden mb-5">
@@ -51,7 +22,7 @@ export default function DeletedPage() {
               <thead>
                 <tr>
                   {['Code', 'Description', 'Unit',
-                    ...(showStamp ? ['Stamp (Deleted By — Date)'] : []),
+                    ...(showStamp ? ['Deleted By'] : []),
                     'Action'
                   ].map(h => (
                     <th key={h} className="bg-gray-50 px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">
@@ -70,9 +41,7 @@ export default function DeletedPage() {
                     </td>
                     {showStamp && (
                       <td className="px-4 py-3 border-t border-gray-50 text-xs text-gray-400">
-                        {p.deleted_by && p.deleted_at
-                          ? `${p.deleted_by} — ${p.deleted_at}`
-                          : '—'}
+                        {p.deleted_by && p.deleted_at ? `${p.deleted_by} — ${p.deleted_at}` : '—'}
                       </td>
                     )}
                     <td className="px-4 py-3 border-t border-gray-50">

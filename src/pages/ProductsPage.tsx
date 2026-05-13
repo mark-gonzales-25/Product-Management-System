@@ -5,7 +5,6 @@ import {
 import { supabase } from '../lib/supabase'
 import type { Product } from '../lib/types'
 import { useAuth } from '../hooks/useAuth'
-import { useRights } from '../context/UserRightsContext'
 
 const UNITS = ['ea', 'pc', 'mtr', 'pkg', 'ltr'] as const
 type Unit = typeof UNITS[number]
@@ -17,15 +16,19 @@ interface ProductForm {
   price: string
 }
 type FormErrors = Partial<Record<keyof ProductForm, string>>
+
 const EMPTY: ProductForm = { code: '', description: '', unit: 'ea', price: '' }
 
 // ─── Three-dot action menu ────────────────────────────────────────────────────
 function ActionMenu({
-  product, canEdit, canDelete, canPriceHistory,
-  onEdit, onDelete, onPriceHistory,
+  product,
+  canDelete,
+  canPriceHistory,
+  onEdit,
+  onDelete,
+  onPriceHistory,
 }: {
   product: Product
-  canEdit: boolean
   canDelete: boolean
   canPriceHistory: boolean
   onEdit: () => void
@@ -44,8 +47,6 @@ function ActionMenu({
     return () => document.removeEventListener('mousedown', outside)
   }, [open])
 
-  if (!canEdit && !canDelete && !canPriceHistory) return null
-
   return (
     <div className="relative" ref={ref}>
       <button
@@ -58,14 +59,12 @@ function ActionMenu({
 
       {open && (
         <div className="absolute right-0 top-8 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50 animate-fade-in">
-          {canEdit && (
-            <button
-              onClick={() => { setOpen(false); onEdit() }}
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
-            >
-              <Pencil size={13} className="text-gray-400" /> Edit Details
-            </button>
-          )}
+          <button
+            onClick={() => { setOpen(false); onEdit() }}
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 cursor-pointer"
+          >
+            <Pencil size={13} className="text-gray-400" /> Edit Details
+          </button>
 
           {canPriceHistory && (
             <button
@@ -184,45 +183,7 @@ function ProductModal({
   )
 }
 
-// ─── Soft Delete Confirm Dialog ───────────────────────────────────────────────
-function SoftDeleteConfirmDialog({
-  product, onConfirm, onCancel,
-}: {
-  product: Product
-  onConfirm: () => void
-  onCancel: () => void
-}) {
-  return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div
-        className="bg-white rounded-2xl p-7 w-full max-w-sm shadow-2xl animate-fade-in"
-        onClick={e => e.stopPropagation()}
-      >
-        <h3 className="text-base font-bold text-gray-800 mb-2">Delete Product?</h3>
-        <p className="text-sm text-gray-500 mb-5">
-          Move <strong>{product.code}</strong> — {product.description} to Deleted Items?
-          This can be recovered by an Admin.
-        </p>
-        <div className="flex gap-2.5 justify-end">
-          <button
-            className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-semibold hover:border-gray-400 cursor-pointer"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button
-            className="px-4 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:opacity-90 cursor-pointer"
-            onClick={onConfirm}
-          >
-            Yes, Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Price History Panel ──────────────────────────────────────────────────────
+// ─── Price History modal ───────────────────────────────────────────────────────
 function PriceHistoryModal({ product, onClose }: { product: Product; onClose: () => void }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -248,7 +209,7 @@ function PriceHistoryModal({ product, onClose }: { product: Product; onClose: ()
             <span className="font-semibold">${product.price.toFixed(2)}</span>
           </div>
           <div className="px-4 py-3 text-center text-xs text-gray-400 border-t border-gray-100">
-            Full price history requires the price_history table (Sprint 2 DB).
+            Historical records will appear here once a price_history table is set up.
           </div>
         </div>
         <div className="flex justify-end mt-5">
@@ -267,36 +228,40 @@ function PriceHistoryModal({ product, onClose }: { product: Product; onClose: ()
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ProductsPage() {
   const { profile } = useAuth()
-  const rights = useRights()
-  const role = profile?.user_type ?? 'USER'
+  const role         = profile?.user_type ?? 'USER'
   const isPrivileged = role === 'ADMIN' || role === 'SUPERADMIN'
 
-  const [products, setProducts]   = useState<Product[]>([])
-  const [filter,   setFilter]     = useState('')
-  const [loading,  setLoading]    = useState(true)
-  const [error,    setError]      = useState<string | null>(null)
+  const [products, setProducts] = useState<Product[]>([])
+  const [filter,   setFilter]   = useState('')
+  const [loading,  setLoading]  = useState(true)
+  const [error,    setError]    = useState<string | null>(null)
 
-  const [showAdd,        setShowAdd]        = useState(false)
-  const [showEdit,       setShowEdit]       = useState(false)
-  const [showHistory,    setShowHistory]    = useState(false)
-  const [showDeleteConf, setShowDeleteConf] = useState(false)
-  const [form,           setForm]           = useState<ProductForm>(EMPTY)
-  const [editId,         setEditId]         = useState<string | null>(null)
-  const [activeProduct,  setActiveProduct]  = useState<Product | null>(null)
-  const [saving,         setSaving]         = useState(false)
-  const [formErrors,     setFormErrors]     = useState<FormErrors>({})
+  const [showAdd,     setShowAdd]     = useState(false)
+  const [showEdit,    setShowEdit]    = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [form,        setForm]        = useState<ProductForm>(EMPTY)
+  const [editId,      setEditId]      = useState<string | null>(null)
+  const [activeProduct, setActiveProduct] = useState<Product | null>(null)
+  const [saving,     setSaving]    = useState(false)
+  const [formErrors, setFormErrors] = useState<FormErrors>({})
 
   const load = async () => {
-    setLoading(true); setError(null)
-    let query = supabase.from('products').select('*').order('code')
-    if (role === 'USER') query = query.eq('active', true)
-    const { data, error: err } = await query
-    if (err) { setError('Failed to load products. Please try again.') }
-    else { setProducts(data ?? []) }
+    setLoading(true)
+    setError(null)
+    const { data, error: err } = await supabase
+      .from('products')
+      .select('*')
+      .eq('active', true)
+      .order('code')
+    if (err) {
+      setError('Failed to load products. Please try again.')
+    } else {
+      setProducts(data ?? [])
+    }
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [role])
+  useEffect(() => { load() }, [])
 
   const filtered = (products ?? []).filter(p =>
     !filter || `${p.code} ${p.description}`.toLowerCase().includes(filter.toLowerCase())
@@ -317,9 +282,12 @@ export default function ProductsPage() {
     await supabase.from('products').insert({
       code: form.code.trim().toUpperCase(),
       description: form.description.trim(),
-      unit: form.unit, price: parseFloat(form.price), active: true,
+      unit: form.unit,
+      price: parseFloat(form.price),
+      active: true,
     })
-    setSaving(false); setShowAdd(false); setForm(EMPTY); setFormErrors({}); load()
+    setSaving(false); setShowAdd(false); setForm(EMPTY); setFormErrors({})
+    load()
   }
 
   const handleSaveEdit = async () => {
@@ -330,29 +298,33 @@ export default function ProductsPage() {
     await supabase.from('products').update({
       code: form.code.trim().toUpperCase(),
       description: form.description.trim(),
-      unit: form.unit, price: parseFloat(form.price),
+      unit: form.unit,
+      price: parseFloat(form.price),
     }).eq('id', editId)
-    setSaving(false); setShowEdit(false); setFormErrors({}); load()
+    setSaving(false); setShowEdit(false); setFormErrors({})
+    load()
   }
 
   const openEdit = (p: Product) => {
     setEditId(p.id)
     setForm({ code: p.code, description: p.description, unit: p.unit, price: p.price.toFixed(2) })
-    setFormErrors({}); setShowEdit(true)
+    setFormErrors({})
+    setShowEdit(true)
   }
 
-  const openHistory = (p: Product) => { setActiveProduct(p); setShowHistory(true) }
+  const openHistory = (p: Product) => {
+    setActiveProduct(p)
+    setShowHistory(true)
+  }
 
-  const openDelete = (p: Product) => { setActiveProduct(p); setShowDeleteConf(true) }
-
-  const handleConfirmDelete = async () => {
-    if (!activeProduct) return
+  const handleDelete = async (p: Product) => {
+    if (!confirm(`Move "${p.code}" to deleted items?`)) return
     await supabase.from('products').update({
       active: false,
       deleted_by: profile?.username ?? null,
       deleted_at: new Date().toISOString().slice(0, 10),
-    }).eq('id', activeProduct.id)
-    setShowDeleteConf(false); setActiveProduct(null); load()
+    }).eq('id', p.id)
+    load()
   }
 
   return (
@@ -371,7 +343,7 @@ export default function ProductsPage() {
                 onChange={e => setFilter(e.target.value)}
               />
             </div>
-            {rights.PRD_ADD === 1 && (
+            {isPrivileged && (
               <button
                 className="px-3.5 py-2 bg-[#1a2744] text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-[#243057] cursor-pointer"
                 onClick={() => { setForm(EMPTY); setFormErrors({}); setShowAdd(true) }}
@@ -386,7 +358,8 @@ export default function ProductsPage() {
         <div className="overflow-x-auto">
           {loading ? (
             <div className="py-16 flex flex-col items-center gap-3 text-gray-400">
-              <div className="spinner" /><span className="text-sm">Loading products…</span>
+              <div className="spinner" />
+              <span className="text-sm">Loading products…</span>
             </div>
           ) : error ? (
             <div className="py-16 flex flex-col items-center gap-2 text-red-400">
@@ -397,16 +370,17 @@ export default function ProductsPage() {
             <div className="py-16 flex flex-col items-center gap-2 text-gray-400">
               <Package size={40} className="opacity-25" />
               <p className="font-medium text-sm">No products found</p>
+              <p className="text-xs">Try a different search term{isPrivileged ? ' or add a new product' : ''}.</p>
             </div>
           ) : (
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  {['Code', 'Description', 'Unit', 'Price',
-                    ...(isPrivileged ? ['Stamp'] : []),
-                    ''
-                  ].map(h => (
-                    <th key={h} className="bg-gray-50 px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                  {['Code', 'Description', 'Unit', 'Price', ''].map(h => (
+                    <th
+                      key={h}
+                      className="bg-gray-50 px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap"
+                    >
                       {h}
                     </th>
                   ))}
@@ -423,19 +397,13 @@ export default function ProductsPage() {
                     <td className="px-4 py-3 border-t border-gray-50 text-[13px] font-semibold text-gray-800">
                       ${p.price.toFixed(2)}
                     </td>
-                    {isPrivileged && (
-                      <td className="px-4 py-3 border-t border-gray-50 text-xs text-gray-400">
-                        {p.deleted_by && p.deleted_at ? `${p.deleted_by} — ${p.deleted_at}` : '—'}
-                      </td>
-                    )}
                     <td className="px-4 py-3 border-t border-gray-50 text-right pr-4">
                       <ActionMenu
                         product={p}
-                        canEdit={rights.PRD_EDIT === 1}
-                        canDelete={rights.PRD_DEL === 1}
+                        canDelete={isPrivileged}
                         canPriceHistory={isPrivileged}
                         onEdit={() => openEdit(p)}
-                        onDelete={() => openDelete(p)}
+                        onDelete={() => handleDelete(p)}
                         onPriceHistory={() => openHistory(p)}
                       />
                     </td>
@@ -448,16 +416,18 @@ export default function ProductsPage() {
       </div>
 
       {showAdd && (
-        <ProductModal title="Add Product" form={form} errors={formErrors} saving={saving}
-          onChange={setForm} onClose={() => setShowAdd(false)} onSave={handleSaveNew} />
+        <ProductModal
+          title="Add Product"
+          form={form} errors={formErrors} saving={saving}
+          onChange={setForm} onClose={() => setShowAdd(false)} onSave={handleSaveNew}
+        />
       )}
       {showEdit && (
-        <ProductModal title="Edit Product" form={form} errors={formErrors} saving={saving}
-          onChange={setForm} onClose={() => setShowEdit(false)} onSave={handleSaveEdit} />
-      )}
-      {showDeleteConf && activeProduct && (
-        <SoftDeleteConfirmDialog product={activeProduct}
-          onConfirm={handleConfirmDelete} onCancel={() => setShowDeleteConf(false)} />
+        <ProductModal
+          title="Edit Product"
+          form={form} errors={formErrors} saving={saving}
+          onChange={setForm} onClose={() => setShowEdit(false)} onSave={handleSaveEdit}
+        />
       )}
       {showHistory && activeProduct && (
         <PriceHistoryModal product={activeProduct} onClose={() => setShowHistory(false)} />
