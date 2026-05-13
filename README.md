@@ -1,102 +1,90 @@
-# MLR-AZ PMS — Product Management System
+# Hope PMS — Production Deployment Guide
 
-A full-stack product management system for an Information Technology Project, built with React 18 + Vite + Supabase and built by 5 people.
+## Sprint 3 – PR-02: chore/production-deploy
+
+This PR documents and configures the production deployment to Vercel/Netlify.
 
 ---
 
-## Quick Start
+## Live Deployment Steps
 
-### 1. Clone & install
+### 1. Environment Variables
 
-```bash
-git clone https://github.com/your-org/hope-pms.git
-cd hope-pms
-npm install
+Set the following in Vercel/Netlify dashboard (Settings → Environment Variables):
+
 ```
-
-### 2. Set up environment variables
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-
-```env
-VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
-Get these values from your **Supabase Dashboard → Project Settings → API**.
+### 2. Supabase Production Redirect URLs
 
-### 3. Run the database migration
+In Supabase Dashboard → Authentication → URL Configuration, add:
 
-In **Supabase Dashboard → SQL Editor**, paste and run in order:
+- **Site URL:** `https://your-app.vercel.app`
+- **Redirect URLs:**
+  - `https://your-app.vercel.app/auth/callback`
+  - `http://localhost:5173/auth/callback` (keep for local dev)
 
-1. `supabase/migrations/001_initial_schema.sql` — creates tables, RLS policies, seeds data
-2. `supabase/migrations/003_trigger_provision_user.sql` — deploys the auto-provisioning trigger
+### 3. Google OAuth (Google Cloud Console)
 
-### 4. Enable Google OAuth
+In Google Cloud Console → Credentials → OAuth 2.0 Client, add to **Authorized redirect URIs**:
+- `https://your-project.supabase.co/auth/v1/callback`
 
-1. Go to **Authentication → Providers → Google** in your Supabase Dashboard.
-2. Enable Google and paste your **Client ID** and **Client Secret** from the [Google Cloud Console](https://console.cloud.google.com).
-3. Set **Authorised redirect URI** in Google Cloud Console to:
-   `https://<your-project-ref>.supabase.co/auth/v1/callback`
-4. In **Supabase → Authentication → URL Configuration**, add:
-   - Site URL: `http://localhost:5173`
-   - Redirect URL: `http://localhost:5173/auth/callback`
-
-### 5. Seed the SUPERADMIN
-
-After your first sign-in, run in Supabase SQL Editor:
+### 4. Vercel Deployment
 
 ```bash
-# Replace with the actual SUPERADMIN email, then run:
-supabase/migrations/002_seed_superadmin.sql
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy from project root
+vercel --prod
 ```
 
-### 6. Start the dev server
+Vercel auto-detects Vite. Build command: `npm run build`. Output dir: `dist`.
+
+### 5. Netlify Deployment
 
 ```bash
+npm run build
+# Upload the /dist folder via Netlify UI, or use netlify-cli:
+netlify deploy --prod --dir=dist
+```
+
+Add `_redirects` file in `/public` for SPA routing:
+```
+/*  /index.html  200
+```
+
+---
+
+## Post-Deploy Checklist
+
+- [ ] Live URL accessible
+- [ ] Login with email works
+- [ ] Login with Google OAuth works
+- [ ] All 3 user types can authenticate
+- [ ] VITE_ env vars set (not exposed in source)
+- [ ] Supabase redirect URLs updated for production domain
+- [ ] Stale GitHub branches deleted
+- [ ] Final release PR (dev → main) created and merged
+
+---
+
+## Local Development
+
+```bash
+git clone <repo-url>
+cd hope-pms
+npm install
+cp .env.example .env.local   # fill in your Supabase credentials
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+## Project Stack
 
----
-
-## Running Tests
-
-```bash
-npm run test
-```
-
-Tests are located in `src/test/`. Sprint 1 tests cover authentication flows (email sign-up, Google OAuth, login guard).
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, Vite, TypeScript, Tailwind CSS |
-| Routing | React Router v6 |
-| Backend / DB | Supabase (PostgreSQL + Auth) |
-| Auth | Google OAuth, Email/Password |
-| Testing | Vitest, React Testing Library |
-
----
-
-## Branching Strategy
-
-```
-main      ← Production. Tagged releases only. Never commit directly.
-  └── dev ← Integration. All feature branches merge here via PR.
-        ├── feat/my-feature   (M1/M2/M4)
-        ├── fix/bug-name      (any member)
-        ├── db/migration-name (M3)
-        ├── test/test-name    (M5)
-        └── docs/doc-name     (M5)
-```
-
-All work must go through a Pull Request. PRs require at least one reviewer approval before merging into `dev`.
+- **Frontend:** Vite + React 18 + TypeScript + Tailwind CSS
+- **Backend/DB:** Supabase (PostgreSQL + Auth + RLS)
+- **Routing:** React Router v6
+- **Charts:** Chart.js via react-chartjs-2
+- **Icons:** Lucide React
