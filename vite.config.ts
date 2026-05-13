@@ -1,11 +1,8 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-  },
-})
+// Placeholder — full implementation in Sprint 2/3
+export default function DeletedPage() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <p className="text-gray-400 text-sm">DeletedPage — coming soon</p>
+    </div>
+  )
+}
