@@ -1,102 +1,79 @@
-# MLR-AZ PMS — Product Management System
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { useAuth } from '../hooks/useAuth'
 
-A full-stack product management system for Hope, Inc., built with React 18 + Vite + Supabase.
+/**
+ * Rights map for the currently logged-in user.
+ * Each key maps directly to a module right flag (1 = granted, 0 = denied).
+ *
+ * These values are read from the profiles table's user_type field
+ * and mapped to a flat rights object for convenient UI gating.
+ */
+export interface RightsMap {
+  PRD_ADD: number    // Can add products
+  PRD_EDIT: number   // Can edit products
+  PRD_DEL: number    // Can soft-delete products (SUPERADMIN only per matrix)
+  REP_001: number    // Can view Product Report
+  REP_002: number    // Can view Top Selling Report
+  ADM_USER: number   // Can access User Management (Admin module)
+}
 
----
+const DEFAULT_RIGHTS: RightsMap = {
+  PRD_ADD: 0,
+  PRD_EDIT: 0,
+  PRD_DEL: 0,
+  REP_001: 0,
+  REP_002: 0,
+  ADM_USER: 0,
+}
 
-## Quick Start
+/**
+ * Derive rights from user_type.
+ * In the current schema, rights are role-based rather than per-user configurable.
+ *
+ * Matrix:
+ *            | PRD_ADD | PRD_EDIT | PRD_DEL | REP_001 | REP_002 | ADM_USER
+ * SUPERADMIN |   1     |    1     |    1    |    1    |    1    |    1
+ * ADMIN      |   1     |    1     |    0    |    1    |    1    |    1
+ * USER       |   0     |    0     |    0    |    1    |    0    |    0
+ */
+function deriveRights(userType: string | undefined): RightsMap {
+  switch (userType) {
+    case 'SUPERADMIN':
+      return { PRD_ADD: 1, PRD_EDIT: 1, PRD_DEL: 1, REP_001: 1, REP_002: 1, ADM_USER: 1 }
+    case 'ADMIN':
+      return { PRD_ADD: 1, PRD_EDIT: 1, PRD_DEL: 0, REP_001: 1, REP_002: 1, ADM_USER: 1 }
+    default: // USER
+      return { PRD_ADD: 0, PRD_EDIT: 0, PRD_DEL: 0, REP_001: 1, REP_002: 0, ADM_USER: 0 }
+  }
+}
 
-### 1. Clone & install
+interface UserRightsContextType {
+  rights: RightsMap
+  loading: boolean
+}
 
-```bash
-git clone https://github.com/your-org/hope-pms.git
-cd hope-pms
-npm install
-```
+const UserRightsContext = createContext<UserRightsContextType | undefined>(undefined)
 
-### 2. Set up environment variables
+export function UserRightsProvider({ children }: { children: ReactNode }) {
+  const { profile, loading: authLoading } = useAuth()
+  const [rights, setRights] = useState<RightsMap>(DEFAULT_RIGHTS)
+  const [loading, setLoading] = useState(true)
 
-```bash
-cp .env.example .env
-```
+  useEffect(() => {
+    if (authLoading) return
+    setRights(deriveRights(profile?.user_type))
+    setLoading(false)
+  }, [profile, authLoading])
 
-Edit `.env`:
+  return (
+    <UserRightsContext.Provider value={{ rights, loading }}>
+      {children}
+    </UserRightsContext.Provider>
+  )
+}
 
-```env
-VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key-here
-```
-
-Get these values from your **Supabase Dashboard → Project Settings → API**.
-
-### 3. Run the database migration
-
-In **Supabase Dashboard → SQL Editor**, paste and run in order:
-
-1. `supabase/migrations/001_initial_schema.sql` — creates tables, RLS policies, seeds data
-2. `supabase/migrations/003_trigger_provision_user.sql` — deploys the auto-provisioning trigger
-
-### 4. Enable Google OAuth
-
-1. Go to **Authentication → Providers → Google** in your Supabase Dashboard.
-2. Enable Google and paste your **Client ID** and **Client Secret** from the [Google Cloud Console](https://console.cloud.google.com).
-3. Set **Authorised redirect URI** in Google Cloud Console to:
-   `https://<your-project-ref>.supabase.co/auth/v1/callback`
-4. In **Supabase → Authentication → URL Configuration**, add:
-   - Site URL: `http://localhost:5173`
-   - Redirect URL: `http://localhost:5173/auth/callback`
-
-### 5. Seed the SUPERADMIN
-
-After your first sign-in, run in Supabase SQL Editor:
-
-```bash
-# Replace with the actual SUPERADMIN email, then run:
-supabase/migrations/002_seed_superadmin.sql
-```
-
-### 6. Start the dev server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173).
-
----
-
-## Running Tests
-
-```bash
-npm run test
-```
-
-Tests are located in `src/test/`. Sprint 1 tests cover authentication flows (email sign-up, Google OAuth, login guard).
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | React 18, Vite, TypeScript, Tailwind CSS |
-| Routing | React Router v6 |
-| Backend / DB | Supabase (PostgreSQL + Auth) |
-| Auth | Google OAuth, Email/Password |
-| Testing | Vitest, React Testing Library |
-
----
-
-## Branching Strategy
-
-```
-main      ← Production. Tagged releases only. Never commit directly.
-  └── dev ← Integration. All feature branches merge here via PR.
-        ├── feat/my-feature   (M1/M2/M4)
-        ├── fix/bug-name      (any member)
-        ├── db/migration-name (M3)
-        ├── test/test-name    (M5)
-        └── docs/doc-name     (M5)
-```
-
-All work must go through a Pull Request. PRs require at least one reviewer approval before merging into `dev`.
+export function useRights(): RightsMap {
+  const ctx = useContext(UserRightsContext)
+  if (!ctx) throw new Error('useRights must be used inside UserRightsProvider')
+  return ctx.rights
+}
