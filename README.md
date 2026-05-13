@@ -9,15 +9,15 @@ A full-stack product management system for Hope, Inc., built with React 18 + Vit
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/mark-gonzales-25/Product-Management-System.git
-cd Product-Management-System-main
+git clone https://github.com/your-org/hope-pms.git
+cd hope-pms
 npm install
 ```
 
 ### 2. Set up environment variables
 
 ```bash
-cp .env
+cp .env.example .env
 ```
 
 Edit `.env`:
