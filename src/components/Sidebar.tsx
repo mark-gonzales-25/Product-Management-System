@@ -1,17 +1,21 @@
 import { NavLink } from 'react-router-dom'
-import { Package, Trash2, FileText, TrendingUp, Users } from 'lucide-react'
+import {
+  Package, Trash2, FileText, TrendingUp, Users
+} from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { useRights } from '../context/UserRightsContext'
 
 interface NavItemProps {
   to: string
   icon: React.ReactNode
   label: string
-  visible?: boolean
+  privileged?: boolean
 }
 
-function NavItem({ to, icon, label, visible = true }: NavItemProps) {
-  if (!visible) return null
+function NavItem({ to, icon, label, privileged = false }: NavItemProps) {
+  const { profile } = useAuth()
+  const role = profile?.user_type ?? 'USER'
+  if (privileged && role === 'USER') return null
+
   return (
     <NavLink
       to={to}
@@ -38,11 +42,6 @@ function SectionLabel({ label }: { label: string }) {
 }
 
 export default function Sidebar() {
-  const { profile } = useAuth()
-  const rights = useRights()
-  const role = profile?.user_type ?? 'USER'
-  const isPrivileged = role === 'ADMIN' || role === 'SUPERADMIN'
-
   return (
     <nav
       className="fixed top-0 left-0 bottom-0 z-50 flex flex-col text-white"
@@ -60,39 +59,15 @@ export default function Sidebar() {
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto py-2">
         <SectionLabel label="Main" />
-        <NavItem to="/app/products" icon={<Package size={15} />} label="Products" />
-        {/* Deleted Items: hidden from USER — gated by role */}
-        <NavItem
-          to="/app/deleted"
-          icon={<Trash2 size={15} />}
-          label="Deleted Items"
-          visible={isPrivileged}
-        />
+        <NavItem to="/app/products"  icon={<Package size={15} />}         label="Products" />
+        <NavItem to="/app/deleted"   icon={<Trash2 size={15} />}          label="Deleted Items" privileged />
 
         <SectionLabel label="Reports" />
-        {/* REP_001: all authenticated users */}
-        <NavItem
-          to="/app/reports/products"
-          icon={<FileText size={15} />}
-          label="Product Report"
-          visible={rights.REP_001 === 1}
-        />
-        {/* REP_002: ADMIN/SUPERADMIN only */}
-        <NavItem
-          to="/app/reports/top-selling"
-          icon={<TrendingUp size={15} />}
-          label="Top Selling"
-          visible={rights.REP_002 === 1}
-        />
+        <NavItem to="/app/reports/products"    icon={<FileText size={15} />}    label="Product Report" />
+        <NavItem to="/app/reports/top-selling" icon={<TrendingUp size={15} />}  label="Top Selling" privileged />
 
         <SectionLabel label="System" />
-        {/* ADM_USER: ADMIN/SUPERADMIN only */}
-        <NavItem
-          to="/app/admin"
-          icon={<Users size={15} />}
-          label="User Management"
-          visible={rights.ADM_USER === 1}
-        />
+        <NavItem to="/app/admin" icon={<Users size={15} />} label="User Management" privileged />
       </div>
 
       {/* Footer */}
