@@ -5,12 +5,11 @@ import LoginPage from './pages/LoginPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
 import DashboardLayout from './pages/DashboardLayout'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
 import ConfigError from './components/ConfigError'
 
 export default function App() {
-  // Show config error immediately — no spinner, no blank screen
   if (isMisconfigured) return <ConfigError />
-
   return <AppRoutes />
 }
 
