@@ -51,7 +51,7 @@ export default function DeletedPage() {
               <thead>
                 <tr>
                   {['Code', 'Description', 'Unit',
-                    ...(showStamp ? ['Stamp (Deleted By — Date)'] : []),
+                    ...(showStamp ? ['Deleted By'] : []),
                     'Action'
                   ].map(h => (
                     <th key={h} className="bg-gray-50 px-4 py-2.5 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">
@@ -70,9 +70,7 @@ export default function DeletedPage() {
                     </td>
                     {showStamp && (
                       <td className="px-4 py-3 border-t border-gray-50 text-xs text-gray-400">
-                        {p.deleted_by && p.deleted_at
-                          ? `${p.deleted_by} — ${p.deleted_at}`
-                          : '—'}
+                        {p.deleted_by && p.deleted_at ? `${p.deleted_by} — ${p.deleted_at}` : '—'}
                       </td>
                     )}
                     <td className="px-4 py-3 border-t border-gray-50">
